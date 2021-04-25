@@ -10,11 +10,13 @@ from typing import List, Dict, Tuple
 # OutputBases may be chained together for each
 # SourceBase in a QuerySet
 # Or chained together for the whole QuerySet
+import typing
+
 
 class OutputBase(object):
 
     @abc.abstractmethod
-    def output(self, name: str, input_data: List[Dict[str, object]]) -> Tuple[str, object]:
+    def output(self, name: str, input_data: Dict[str,List[Dict[str, typing.Any]]]) -> Tuple[str, object]:
         raise NotImplemented
 
     def __init__(self, options):

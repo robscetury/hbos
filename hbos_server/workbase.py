@@ -9,7 +9,7 @@ from abc import abstractmethod
 class WorkBase(object):
 
     @abstractmethod
-    def execute(self, data: List[Dict[str, object]]) -> bool:
+    def execute(self, data: Dict[str,List[Dict[str, object]]]) -> bool:
         raise NotImplemented
 
     def __init__(self, options):
