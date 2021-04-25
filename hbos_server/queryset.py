@@ -1,5 +1,7 @@
 from typing import List, Dict
 
+import typing
+
 from hbos_server.defaultoutput import DefaultOutput
 from .outputbase import OutputBase
 from .workbase import WorkBase
@@ -19,7 +21,7 @@ class QuerySet(object):
         return self._name
 
     @name.setter
-    def set_name(self, value: str):
+    def name(self, value: str):
         self._name = value
 
 
@@ -29,7 +31,7 @@ class QuerySet(object):
         return self._sources
 
     @sources.setter
-    def set_sources(self, value: List[SourceBase]):
+    def sources(self, value: List[SourceBase]):
         # validated we've got a dictionary of SourceBases
         if isinstance(value, list):
             for k in value:
@@ -45,7 +47,7 @@ class QuerySet(object):
         return self._work
 
     @work.setter
-    def set_work(self, value: List[WorkBase]):
+    def work(self, value: List[WorkBase]):
         self._work = value
 
 
@@ -55,7 +57,7 @@ class QuerySet(object):
         return self._outputs
 
     @outputs.setter
-    def set_outputs(self, value: List[WorkBase]):
+    def outputs(self, value: List[WorkBase]):
         self._outputs = value
 
     @property
@@ -63,23 +65,22 @@ class QuerySet(object):
         return self._methods
 
     @methods.setter
-    def set_methods(self, value: List[str]):
+    def methods(self, value: List[str]):
         self._methods = value
 
-    def execute(self, *params, **kwargs) -> Dict[str, object]:
+    def execute(self, *params, **kwargs) -> Dict[str, typing.Any]:
         dataset = dict()
         results = dict()
         for k in self.sources:
-            data = self.sources[k.name].execute(*params, *kwargs)
+            data = k.retrieve(*params, *kwargs)
             outputs = self.outputs if len(self.outputs) > 0 else [DefaultOutput(**kwargs)]
             dataset[k.name] = data
-            for output in outputs:
-                name, modified = output.output(k.name, dataset)
+        for output in self.outputs:
+                name, modified = output.output(self.name, dataset)
                 results[name] = modified
-            work_calls = self.work
-            for w in work_calls:
-                work = w(**kwargs)
-                work.execute(results)
+        work_calls = self.work
+        for w in work_calls:
+                w.execute(dataset)
         return results
 
 
