@@ -1,0 +1,20 @@
+{
+  "querysets": [{
+    "name": "/files/",
+    "sources": [
+      {
+        "name": "foo",
+        "class": "hbos_server.sources.filesystemstorage.FileSystemStorage",
+        "path": "/tmp/foo"
+      },
+      {
+        "name": "bar",
+        "class": "hbos_server.sources.filesystemstorage.FileSystemStorage",
+        "path": "/tmp/foo"
+      }
+
+    ],
+    "methods": ["GET","PUT","POST","DELETE"]
+  }
+  ]
+}

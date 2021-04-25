@@ -3,7 +3,7 @@ from typing import Dict
 from .queryset import QuerySet
 from json import load
 from os.path import exists
-
+from traceback import print_exc
 
 class HBOSConfig(object):
 
@@ -20,19 +20,20 @@ class HBOSConfig(object):
             except:
                 config = None
                 self._new_install=True
+                print_exc()
         if config is None:
             self._new_install = True
             return
 
         for k in config["querysets"]:
-            self._querysets[k] = QuerySet(config["querysets"][k])
+            self._querysets[k["name"]] = QuerySet(k["name"], k)
 
     @property
     def querysets(self) -> Dict[str, QuerySet]:
         return self._querysets
 
     @querysets.setter
-    def set_querysets(self, value: Dict[str, QuerySet]):
+    def querysets(self, value: Dict[str, QuerySet]):
         self._querysets = value
 
     @property
@@ -40,5 +41,5 @@ class HBOSConfig(object):
         return self._new_install
 
     @is_new.setter
-    def set_is_new(self, value: bool):
+    def is_new(self, value: bool):
         self._new_install = value
