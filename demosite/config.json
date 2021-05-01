@@ -4,17 +4,36 @@
     "sources": [
       {
         "name": "foo",
-        "class": "hbos_server.sources.filesystemstorage.FileSystemStorage",
+        "class": "hbos_source.source.filesystemstorage.FileSystemStorage",
         "path": "/tmp/foo"
       },
       {
         "name": "bar",
-        "class": "hbos_server.sources.filesystemstorage.FileSystemStorage",
-        "path": "/tmp/foo"
+        "class": "hbos_source.source.filesystemstorage.FileSystemStorage",
+        "path": "/tmp/bar"
       }
 
     ],
     "methods": ["GET","PUT","POST","DELETE"]
-  }
+  },
+    {
+      "name": "/files/<string:name>",
+      "sources": [
+        {
+          "name": "foo",
+          "class": "hbos_source.source.filesystemstorage.FileSystemStorage",
+          "path": "/tmp/foo",
+          "item_key": "name"
+        },
+        {
+          "name": "bar",
+          "class": "hbos_source.source.filesystemstorage.FileSystemStorage",
+          "path": "/tmp/bar",
+          "item_key": "name"
+        }
+
+      ],
+      "methods": ["GET","PUT","POST","DELETE"]
+    }
   ]
 }

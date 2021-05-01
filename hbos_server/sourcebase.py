@@ -9,7 +9,7 @@ from typing import List, Dict
 class SourceBase(object):
 
     @abstractmethod
-    def create(self, objects_to_create: List[Dict[str, typing.Any]]) -> bool:
+    def create(self, objects_to_create: List[Dict[str, typing.Any]],*args,**kwargs) -> List[Dict[str, typing.Any]]:
         raise NotImplemented
 
     @abstractmethod
@@ -18,11 +18,11 @@ class SourceBase(object):
 
     @abstractmethod
     def update(self, update_values: List[Dict[str, typing.Any]],
-               original_values: List[Dict[str, typing.Any]] = None) -> bool:
+               original_values: List[Dict[str, typing.Any]] = None,*args,**kwargs) -> List[Dict[str, typing.Any]]:
         raise NotImplemented
 
     @abstractmethod
-    def delete(self, to_delete: List) -> bool:
+    def delete(self, to_delete: List,*args,**kwargs) -> bool:
         raise NotImplemented
 
     @abstractmethod
@@ -53,6 +53,7 @@ class SourceBase(object):
     def name(self, value: str):
         self._name = value
 
+    # noinspection PyTypeChecker
     def undo(self, verb: str, objs=List[Dict[str, typing.Any]], original_objs=List[Dict[str, typing.Any]]):
         to_call = None
         original_value = False

@@ -1,12 +1,13 @@
-from typing import List, Dict
-
 import typing
+from importlib import import_module
+from typing import List
+
+from flask import request
 
 from hbos_server.defaultoutput import DefaultOutput
 from .outputbase import OutputBase
-from .workbase import WorkBase
 from .sourcebase import SourceBase
-from importlib import import_module
+from .workbase import WorkBase
 
 
 def get_library_and_class_names(importstatement):
@@ -80,6 +81,7 @@ class QuerySet(object):
 
     @property
     def outputs(self) -> List[OutputBase]:
+        if len(self._outputs)==0: return [ DefaultOutput({})]
         return self._outputs
 
     @outputs.setter
@@ -94,20 +96,66 @@ class QuerySet(object):
     def methods(self, value: List[str]):
         self._methods = value
 
-    def execute(self, *params, **kwargs) -> Dict[str, typing.Any]:
+    def get(self, req : request, *args, **kwargs) -> typing.Optional[object]:
+        dataset = dict()
+        results = dict()
+
+        for k in self.sources:
+            data = k.retrieve(*args, **kwargs)
+            outputs = self.outputs if len(self.outputs) > 0 else [DefaultOutput(kwargs)]
+            dataset[k.name] = data
+        results = self.process_results(dataset, results)
+        return results
+
+    def process_results(self, dataset, results):
+        modified = None
+        for output in self.outputs:
+            name, modified = output.output(self.name, dataset)
+        return modified
+
+
+
+    def put(self, req:request, *args, **kwargs) -> typing.Optional[object]:
+        body = req.json
         dataset = dict()
         results = dict()
         for k in self.sources:
-            data = k.retrieve(*params, *kwargs)
-            outputs = self.outputs if len(self.outputs) > 0 else [DefaultOutput(kwargs)]
-            dataset[k.name] = data
-        for output in self.outputs:
-            name, modified = output.output(self.name, dataset)
-            results[name] = modified
-        work_calls = self.work
-        for w in work_calls:
-            w.execute(dataset)
+            original_values = k.retrieve(*args, **kwargs)
+            data = k.update(body[k.name],original_values, *args, **kwargs)
+            dataset[k.name]=data
+        results = self.process_results(dataset, results)
         return results
+
+    def post(self, req:request, *args, **kwargs) -> typing.Optional[object]:
+        body = req.json
+        dataset = dict()
+        results = dict()
+        for k in self.sources:
+            data = k.create(body[k.name], *args, **kwargs)
+            dataset[k.name]=data
+        results = self.process_results(dataset, results)
+        return results
+
+    def delete(self,req: request ,*args, **kwargs)-> typing.Optional[object]:
+        body = req.json
+        dataset = dict()
+        results = dict()
+        for k in self.sources:
+            data = k.delete(body[k.name],*args, **kwargs)
+            dataset[k.name]=data
+        results = self.process_results(dataset, results)
+        return results
+
+    def execute(self, method: str, req:request, *args, **kwargs) -> typing.Optional[object]:
+        if(method=="get"):
+            return self.get(req, *args, **kwargs)
+        elif method == "put":
+            return self.put(req, *args, **kwargs)
+        elif method == "post":
+            return self.post(req, *args, **kwargs)
+        elif method == "delete":
+            return self.post(req, *args, **kwargs)
+
 
 
 class NotSupportedException(BaseException):
