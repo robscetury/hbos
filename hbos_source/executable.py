@@ -9,10 +9,10 @@ from os import linesep
 class SimpleExecutable(SourceBase):
 
     def update(self, update_values: List[Dict[str, typing.Any]],
-               original_values: List[Dict[str, typing.Any]] = None) -> bool:
+               original_values: List[Dict[str, typing.Any]] = None,*args,**kwargs) -> bool:
         pass
 
-    def delete(self, to_delete: List) -> bool:
+    def delete(self, to_delete: List,*args,**kwargs) -> bool:
         pass
 
     def undo_update(self, original_value: Dict[str, typing.Any]):
@@ -24,7 +24,7 @@ class SimpleExecutable(SourceBase):
     def undo_create(self, attempt_create: Dict[str, typing.Any]):
         pass
 
-    def create(self, List):
+    def create(self, List,*args,**kwargs):
         pass
 
     def retrieve(self, *args, **kwargs) -> List[Dict[str, typing.Any]]:

@@ -6,7 +6,8 @@ from flask_restful import Api
 from .configuration import HBOSConfig
 from .hbos_resource import HBOSResource, create_resource
 from .queryset import QuerySet
-
+from os import chdir
+from os.path import dirname
 
 class HBOServer(object):
 
@@ -34,5 +35,8 @@ def start_hbos_server(args):
 
     app = Flask("HBOServer")
     api = Api(app)
+    configFile = args[-1]
+    basedir = dirname(configFile)
+    chdir(basedir)
     hbos = HBOServer(api, args[-1])
     app.run()

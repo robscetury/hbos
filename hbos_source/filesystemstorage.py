@@ -2,7 +2,7 @@ import os
 import typing
 import uuid
 from json import load, dump
-from os.path import join
+from os.path import join, normpath, abspath
 from typing import Dict, List
 
 from hbos_server.sourcebase import SourceBase
@@ -32,7 +32,7 @@ def delete_from_idx(path:str, item_key_value):
 
 def write_idx(path:str, idx):
     idx_path = os.path.join(path, ".idx")
-    with open(join(idx_path, ".idx"),"w") as f:
+    with open(idx_path,"w") as f:
         dump(idx, f)
 
 def write_file(path:str, obj:typing.Any, item_key_value=None):
@@ -55,6 +55,10 @@ class ObjectAlreadyExists(Exception):
     pass
 
 
+class ObjectNotFound(Exception):
+    pass
+
+
 class FileSystemStorage(SourceBase):
 
     def create(self, objs_to_create: List[Dict[str, typing.Any]],*args, **kwargs) -> List[Dict[str, typing.Any]]:
@@ -64,12 +68,13 @@ class FileSystemStorage(SourceBase):
             try:
                 if "item_key" in self.options:
                     idx = read_idx(self.storage_directory, self.options["item_key"])
-                    obj = self.load_by_item_key(idx, kwargs)
-                    if obj is not None:
-                        raise ObjectAlreadyExists
+                    if idx is not None:
+                        obj = self.load_by_item_key(idx,  kwargs if self.options["item_key"] in kwargs else item)
+                        if obj is not None:
+                            raise ObjectAlreadyExists
                 if not "_hbos_id" in item:
                     item["_hbos_id"] = str(uuid.uuid1())
-                write_file(join(self.storage_directory, f"{item['_hbos_id']}.json"), item)
+                write_file(join(self.storage_directory, f"{item['_hbos_id']}.json"), item, self.get_item_key(item))
             except Exception as e:
                 all_created = False
                 hold_on_to_e=e
@@ -94,11 +99,14 @@ class FileSystemStorage(SourceBase):
             # get a whole directory....
             for root,dirs,fnames in os.walk(self.storage_directory):
                 for fname in fnames:
+                    if fname.startswith("."): continue
                     result.append( read_file( join(root, fname)))
             return result
 
     def load_by_item_key(self, idx, kwargs):
-        with open( self.get_file_by_item_key(idx, kwargs)) as f:
+        filepath = self.get_file_by_item_key(idx, kwargs)
+        if filepath is None or not os.path.exists(filepath): return None
+        with open( filepath ) as f:
             return load(f)
 
     def get_file_by_item_key(self, idx, kwargs):
@@ -114,9 +122,9 @@ class FileSystemStorage(SourceBase):
         return "item_key" in self.options and self.options["item_key"] in kwargs
 
     def update(self, update_values: List[Dict[str, typing.Any]],
-               original_values: List[Dict[str, typing.Any]] = None, *args, **kwargs) -> bool:
-        original_values = []
-        all_written = False
+               original_values: List[Dict[str, typing.Any]] = None, *args, **kwargs) -> List[Dict[str, typing.Any]]:
+        #original_values = []
+        all_written = True
         hold_on_to_e = None
         if self.has_item_key(kwargs) and len(update_values)>0:
             obj = update_values[0]
@@ -124,12 +132,23 @@ class FileSystemStorage(SourceBase):
             write_file(path, obj , self.get_item_key(kwargs))
         for i in range(0, len(update_values)):
             item = update_values[i]
-            path = join(self.storage_directory, f"{item['_hbos_id']}.json")
+            _hbos_id = None
+            if "_hbos_id" in item:
+                _hbos_id = item["_hbos_id"]
+            elif not "_hbos_id" in item and "item_key" in self.options:
+                #idx = read_idx(self.storage_directory, self.options["item_key"])
+                _hbos_ids = [ x["_hbos_id"] for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ]
+                _hbos_id = _hbos_ids[0] if len(_hbos_ids)>0 else None
+            if _hbos_id is None:
+                raise ObjectNotFound
+            else:
+                item["_hbos_id"] = _hbos_id
+            path = join(self.storage_directory, f"{_hbos_id}.json")
             original_values.append(read_file(path))
             try:
                 curr = None
                 if "item_key" in self.options and hasattr(item,self.options["item_key"]):
-                    orig = getattr(original_values[-1], self.options["item_key"])
+                    orig = [x for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ][0]
                     curr = getattr(item, self.options["item_key"])
                     if curr != orig:
                         delete_from_idx(self.storage_directory, orig)
@@ -141,11 +160,12 @@ class FileSystemStorage(SourceBase):
         if not all_written:
             self.undo("update", update_values, original_values)
             raise hold_on_to_e
-        return all_written
+        return update_values
 
-    def delete(self, to_delete: List[Dict[str, typing.Any]],**kwargs) -> bool:
-        original_values = []
-        all_deleted = False
+    def delete(self, to_delete: List[Dict[str, typing.Any]],*args,
+               **kwargs) -> bool:
+        original_values = self.retrieve(self, *args, **kwargs)
+        all_deleted = True
         hold_on_to_e = None
         if self.has_item_key(kwargs):
             item_key_value = self.get_item_key(kwargs)
@@ -157,12 +177,24 @@ class FileSystemStorage(SourceBase):
         else:
             for i in range(0, len(to_delete)):
                 item = to_delete[i]
+                _hbos_id = None
+                if "_hbos_id" in item:
+                    _hbos_id = item["_hbos_id"]
+                elif not "_hbos_id" in item and "item_key" in self.options:
+                    #idx = read_idx(self.storage_directory, self.options["item_key"])
+                    _hbos_ids = [ x["_hbos_id"] for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ]
+                    _hbos_id = _hbos_ids[0] if len(_hbos_ids)>0 else None
+                if _hbos_id is None:
+                    raise ObjectNotFound
+                else:
+                    item["_hbos_id"] = _hbos_id
                 try:
+
                     path = join(self.storage_directory, f"{item['_hbos_id']}.json")
                     original_values.append(read_file(path))
                     self.delete_object(item)
-                    if "item_key" in self.options and hasattr(item,self.options["item_key"]):
-                        delete_from_idx(self.storage_directory, getattr(item, self.options["item_key"]))
+                    if "item_key" in self.options and item[self.options["item_key"]]:
+                        delete_from_idx(self.storage_directory, item[self.options["item_key"]])
 
                 except Exception as e:
                     all_deleted = False
@@ -175,11 +207,11 @@ class FileSystemStorage(SourceBase):
 
     def undo_update(self, original_value: Dict[str, typing.Any]):
         if "_hbos_id" in original_value:
-            write_file( join(self.storage_directory, f"{original_value['_hbos_id']}.json"), original_value)
+            write_file( join(self.storage_directory, f"{original_value['_hbos_id']}.json"), original_value, self.get_item_key(original_value))
 
     def undo_delete(self, attempt_delete: Dict[str, typing.Any]):
         if "_hbos_id" in attempt_delete:
-            write_file( join(self.storage_directory, f"{attempt_delete['_hbos_id']}.json"), attempt_delete)
+            write_file( join(self.storage_directory, f"{attempt_delete['_hbos_id']}.json"), attempt_delete, self.get_item_key(attempt_delete))
 
     def undo_create(self, attempt_create: Dict[str, typing.Any]):
         try:
@@ -195,4 +227,4 @@ class FileSystemStorage(SourceBase):
 
     @property
     def storage_directory(self):
-        return typing.cast(str, self.options["path"])
+        return abspath( normpath(typing.cast(str, self.options["path"])))

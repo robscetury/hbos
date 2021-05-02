@@ -4,13 +4,15 @@
     "sources": [
       {
         "name": "foo",
-        "class": "hbos_source.source.filesystemstorage.FileSystemStorage",
-        "path": "/tmp/foo"
+        "class": "hbos_source.filesystemstorage.FileSystemStorage",
+        "path": "./foo",
+        "item_key": "name"
       },
       {
         "name": "bar",
-        "class": "hbos_source.source.filesystemstorage.FileSystemStorage",
-        "path": "/tmp/bar"
+        "class": "hbos_source.filesystemstorage.FileSystemStorage",
+        "path": "./bar",
+        "item_key": "name"
       }
 
     ],
@@ -21,14 +23,14 @@
       "sources": [
         {
           "name": "foo",
-          "class": "hbos_source.source.filesystemstorage.FileSystemStorage",
-          "path": "/tmp/foo",
+          "class": "hbos_source.filesystemstorage.FileSystemStorage",
+          "path": "./foo",
           "item_key": "name"
         },
         {
           "name": "bar",
-          "class": "hbos_source.source.filesystemstorage.FileSystemStorage",
-          "path": "/tmp/bar",
+          "class": "hbos_source.filesystemstorage.FileSystemStorage",
+          "path": "./bar",
           "item_key": "name"
         }
 

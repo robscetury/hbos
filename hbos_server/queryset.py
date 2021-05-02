@@ -154,7 +154,7 @@ class QuerySet(object):
         elif method == "post":
             return self.post(req, *args, **kwargs)
         elif method == "delete":
-            return self.post(req, *args, **kwargs)
+            return self.delete(req, *args, **kwargs)
 
 
 
