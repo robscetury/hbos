@@ -1,5 +1,6 @@
 from flask import request
 from flask_restful import Resource
+from pandas import DataFrame
 
 from .queryset import QuerySet
 
@@ -18,16 +19,31 @@ def create_resource(qs: QuerySet, *args, **kwargs):
 
 
     def get(self, *args, **kwargs):
-        return self.queryset.execute("get", request, *args, **kwargs)
+        result = self.queryset.execute("get", request, *args, **kwargs)
+        clean_result(result)
+        return result
+
+    def clean_result(result):
+        if (isinstance(result, dict)):
+            for k in result.keys():
+                item_records = result[k]
+                if isinstance(item_records, DataFrame):
+                    result[k] = item_records.to_dict('records')
 
     def put(self, *args, **kwargs):
-        return self.queryset.execute("put", request, *args, **kwargs)
+        result = self.queryset.execute("put", request, *args, **kwargs)
+        clean_result(result)
+        return result
 
     def post(self, *args, **kwargs):
-        return self.queryset.execute("post", request, *args, **kwargs)
+        result = self.queryset.execute("post", request, *args, **kwargs)
+        clean_result(result)
+        return result
 
     def delete(self, *args, **kwargs):
-        return self.queryset.execute("delete", request, *args, **kwargs)
+        result = self.queryset.execute("delete", request, *args, **kwargs)
+        clean_result(result)
+        return result
 
     new_class = type(f"__HBOSResource{resource_count}",
                      (Resource,),

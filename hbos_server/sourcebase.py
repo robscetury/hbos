@@ -1,6 +1,6 @@
 import typing
 from abc import abstractmethod
-
+from pandas import DataFrame
 # Represents a source of data e.g. a database query,
 # restful api or other entity that provides data
 from typing import List, Dict
@@ -9,7 +9,7 @@ from typing import List, Dict
 class SourceBase(object):
 
     @abstractmethod
-    def create(self, objects_to_create: List[Dict[str, typing.Any]],*args,**kwargs) -> List[Dict[str, typing.Any]]:
+    def create(self, objects_to_create: List[Dict[str, typing.Any]],*args,**kwargs) -> DataFrame:
         raise NotImplemented
 
     @abstractmethod
@@ -18,7 +18,7 @@ class SourceBase(object):
 
     @abstractmethod
     def update(self, update_values: List[Dict[str, typing.Any]],
-               original_values: List[Dict[str, typing.Any]] = None,*args,**kwargs) -> List[Dict[str, typing.Any]]:
+               original_values: List[Dict[str, typing.Any]] = None,*args,**kwargs) -> DataFrame:
         raise NotImplemented
 
     @abstractmethod

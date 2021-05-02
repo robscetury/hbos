@@ -4,7 +4,7 @@ import uuid
 from json import load, dump
 from os.path import join, normpath, abspath
 from typing import Dict, List
-
+from pandas import DataFrame
 from hbos_server.sourcebase import SourceBase
 
 def read_idx(path:str, item_key=None):
@@ -61,9 +61,10 @@ class ObjectNotFound(Exception):
 
 class FileSystemStorage(SourceBase):
 
-    def create(self, objs_to_create: List[Dict[str, typing.Any]],*args, **kwargs) -> List[Dict[str, typing.Any]]:
+    def create(self, objs_to_create: List[Dict[str, typing.Any]],*args, **kwargs) -> DataFrame:
         all_created = True
         hold_on_to_e = None
+        ret_val = []
         for item in objs_to_create:
             try:
                 if "item_key" in self.options:
@@ -75,6 +76,7 @@ class FileSystemStorage(SourceBase):
                 if not "_hbos_id" in item:
                     item["_hbos_id"] = str(uuid.uuid1())
                 write_file(join(self.storage_directory, f"{item['_hbos_id']}.json"), item, self.get_item_key(item))
+                ret_val.append(item)
             except Exception as e:
                 all_created = False
                 hold_on_to_e=e
@@ -82,26 +84,27 @@ class FileSystemStorage(SourceBase):
         if not all_created:
             self.undo("create", objs_to_create)
             raise hold_on_to_e
-        return objs_to_create
+        return DataFrame(ret_val)
 
-    def retrieve(self, *args, **kwargs) -> List[Dict[str, typing.Any]]:
+    def retrieve(self, *args, **kwargs) -> DataFrame:
 
+        ret_val = list()
         if "_hbos_id" in kwargs:
-            return [ read_file( join(self.storage_directory, f"{kwargs['_hbos_id']}.json"))]
+            ret_val.append( read_file( join(self.storage_directory, f"{kwargs['_hbos_id']}.json")))
         elif self.has_item_key(kwargs):
             idx = read_idx(self.storage_directory, self.options["item_key"])
             if self.get_item_key(kwargs) in idx:
-                result = list()
-                result.append(self.load_by_item_key(idx, kwargs))
-                return result
+
+                ret_val.append(self.load_by_item_key(idx, kwargs))
+                return DataFrame( ret_val)
         else:
-            result = []
+            #result = []
             # get a whole directory....
             for root,dirs,fnames in os.walk(self.storage_directory):
                 for fname in fnames:
                     if fname.startswith("."): continue
-                    result.append( read_file( join(root, fname)))
-            return result
+                    ret_val.append( read_file( join(root, fname)))
+            return DataFrame(ret_val)
 
     def load_by_item_key(self, idx, kwargs):
         filepath = self.get_file_by_item_key(idx, kwargs)
@@ -122,45 +125,51 @@ class FileSystemStorage(SourceBase):
         return "item_key" in self.options and self.options["item_key"] in kwargs
 
     def update(self, update_values: List[Dict[str, typing.Any]],
-               original_values: List[Dict[str, typing.Any]] = None, *args, **kwargs) -> List[Dict[str, typing.Any]]:
+               original_values: DataFrame = None, *args, **kwargs) -> DataFrame:
         #original_values = []
+        ret_val = list()
         all_written = True
         hold_on_to_e = None
         if self.has_item_key(kwargs) and len(update_values)>0:
             obj = update_values[0]
             path = join(self.storage_directory, f"{obj['_hbos_id']}.json")
             write_file(path, obj , self.get_item_key(kwargs))
-        for i in range(0, len(update_values)):
-            item = update_values[i]
-            _hbos_id = None
-            if "_hbos_id" in item:
-                _hbos_id = item["_hbos_id"]
-            elif not "_hbos_id" in item and "item_key" in self.options:
-                #idx = read_idx(self.storage_directory, self.options["item_key"])
-                _hbos_ids = [ x["_hbos_id"] for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ]
-                _hbos_id = _hbos_ids[0] if len(_hbos_ids)>0 else None
-            if _hbos_id is None:
-                raise ObjectNotFound
-            else:
-                item["_hbos_id"] = _hbos_id
-            path = join(self.storage_directory, f"{_hbos_id}.json")
-            original_values.append(read_file(path))
-            try:
-                curr = None
-                if "item_key" in self.options and hasattr(item,self.options["item_key"]):
-                    orig = [x for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ][0]
-                    curr = getattr(item, self.options["item_key"])
-                    if curr != orig:
-                        delete_from_idx(self.storage_directory, orig)
-                write_file(path, item, curr)
-            except Exception as e:
-                hold_on_to_e= e
-                all_written = False
-                break
-        if not all_written:
-            self.undo("update", update_values, original_values)
-            raise hold_on_to_e
-        return update_values
+            ret_val.append(obj)
+            return DataFrame(ret_val)
+        else:
+            for i in range(0, len(update_values)):
+                item = update_values[i]
+                _hbos_id = None
+                if "_hbos_id" in item:
+                    _hbos_id = item["_hbos_id"]
+                elif not "_hbos_id" in item and "item_key" in self.options:
+                    #idx = read_idx(self.storage_directory, self.options["item_key"])
+                    _hbos_ids =  original_values[ original_values[self.options["item_key"]] ==  item[self.options["item_key"] ] ]
+                    #[ x["_hbos_id"] for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ]
+                    _hbos_id = _hbos_ids._hbos_id[0]
+                if _hbos_id is None:
+                    raise ObjectNotFound
+                else:
+                    item["_hbos_id"] = _hbos_id
+                path = join(self.storage_directory, f"{_hbos_id}.json")
+                #original_values.append(read_file(path))
+                try:
+                    curr = None
+                    if "item_key" in self.options and hasattr(item,self.options["item_key"]):
+                        orig = [x for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ][0]
+                        curr = getattr(item, self.options["item_key"])
+                        if curr != orig:
+                            delete_from_idx(self.storage_directory, orig)
+                    write_file(path, item, curr)
+                    ret_val.append(item)
+                except Exception as e:
+                    hold_on_to_e= e
+                    all_written = False
+                    break
+            if not all_written:
+                self.undo("update", update_values, original_values)
+                raise hold_on_to_e
+        return DataFrame(ret_val)
 
     def delete(self, to_delete: List[Dict[str, typing.Any]],*args,
                **kwargs) -> bool:
@@ -182,8 +191,9 @@ class FileSystemStorage(SourceBase):
                     _hbos_id = item["_hbos_id"]
                 elif not "_hbos_id" in item and "item_key" in self.options:
                     #idx = read_idx(self.storage_directory, self.options["item_key"])
-                    _hbos_ids = [ x["_hbos_id"] for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ]
-                    _hbos_id = _hbos_ids[0] if len(_hbos_ids)>0 else None
+                    _hbos_ids =  original_values[ original_values[self.options["item_key"]] ==  item[self.options["item_key"] ] ]
+                    #[ x["_hbos_id"] for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ]
+                    _hbos_id = _hbos_ids._hbos_id[0]
                 if _hbos_id is None:
                     raise ObjectNotFound
                 else:
@@ -191,7 +201,7 @@ class FileSystemStorage(SourceBase):
                 try:
 
                     path = join(self.storage_directory, f"{item['_hbos_id']}.json")
-                    original_values.append(read_file(path))
+                    #original_values.append(read_file(path), ignore_index=True)
                     self.delete_object(item)
                     if "item_key" in self.options and item[self.options["item_key"]]:
                         delete_from_idx(self.storage_directory, item[self.options["item_key"]])
