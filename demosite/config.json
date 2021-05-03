@@ -1,4 +1,16 @@
 {
+  "ssl": {
+    "ssl": false,
+    "ssl_context": null
+  },
+  "network":{
+    "port": 5055,
+    "interface": "0.0.0.0"
+  },
+  "logging": {
+    "loglevel": "debug",
+    "logfile": "./honeybadger.log"
+  },
   "querysets": [{
     "name": "/files/",
     "sources": [

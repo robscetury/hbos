@@ -7,13 +7,16 @@ from .configuration import HBOSConfig
 from .hbos_resource import HBOSResource, create_resource
 from .queryset import QuerySet
 from os import chdir
-from os.path import dirname
+from os.path import dirname, exists
 
 class HBOServer(object):
 
-    def __init__(self, api,  configFile):
+    def __init__(self, api,  config_file):
         #Flask.__init__(name)
-        self._config = HBOSConfig(configFile)
+        if isinstance(config_file, HBOSConfig):
+            self._config = config_file
+        else:
+            self._config = HBOSConfig(config_file)
         self._query_config: Dict[str, QuerySet] = self._config.querysets if not self._config.is_new else dict()
         self._resources = dict()
         for name in self._query_config:
@@ -33,10 +36,14 @@ class HBOServer(object):
 
 def start_hbos_server(args):
 
+    config_file = args[-1]
+    basedir = dirname(config_file)
+    chdir(basedir)
+    config = None
+    if exists(config_file):
+        config = HBOSConfig(config_file)
     app = Flask("HBOServer")
     api = Api(app)
-    configFile = args[-1]
-    basedir = dirname(configFile)
-    chdir(basedir)
-    hbos = HBOServer(api, args[-1])
-    app.run()
+
+    hbos = HBOServer(api, config)
+    app.run(port=config.port, host=config.interface, ssl_context = config.ssl_context if config.use_ssl else None)
