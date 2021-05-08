@@ -5,6 +5,8 @@ from json import load, dump
 from os.path import join, normpath, abspath
 from typing import Dict, List
 from pandas import DataFrame
+
+from hbos_server.exceptions import ObjectAlreadyExists, ObjectNotFound
 from hbos_server.sourcebase import SourceBase
 
 def read_idx(path:str, item_key=None):
@@ -51,12 +53,6 @@ def read_file(path:str):
         return load(f)
 
 
-class ObjectAlreadyExists(Exception):
-    pass
-
-
-class ObjectNotFound(Exception):
-    pass
 
 
 class FileSystemStorage(SourceBase):
@@ -72,13 +68,14 @@ class FileSystemStorage(SourceBase):
                     if idx is not None:
                         obj = self.load_by_item_key(idx,  kwargs if self.options["item_key"] in kwargs else item)
                         if obj is not None:
-                            raise ObjectAlreadyExists
+                            raise ObjectAlreadyExists()
                 if not "_hbos_id" in item:
                     item["_hbos_id"] = str(uuid.uuid1())
                 write_file(join(self.storage_directory, f"{item['_hbos_id']}.json"), item, self.get_item_key(item))
                 ret_val.append(item)
             except Exception as e:
                 all_created = False
+
                 hold_on_to_e=e
                 break
         if not all_created:
@@ -148,7 +145,7 @@ class FileSystemStorage(SourceBase):
                     #[ x["_hbos_id"] for x in original_values if "_hbos_id" in x and x[self.options["item_key"]] == item[self.options["item_key"]] ]
                     _hbos_id = _hbos_ids._hbos_id[0]
                 if _hbos_id is None:
-                    raise ObjectNotFound
+                    raise ObjectNotFound()
                 else:
                     item["_hbos_id"] = _hbos_id
                 path = join(self.storage_directory, f"{_hbos_id}.json")

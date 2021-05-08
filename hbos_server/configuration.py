@@ -34,18 +34,22 @@ class HBOSConfig(object):
         else:
             self._use_ssl = False
             self._ssl_context = None
+
         if "network" in config:
             self._port = config["network"]["port"]
             self._interface = config["network"]["interface"]
         else:
             self._port = 5055
             self._interface="localhost"
+
         if "logging" in config:
             self._loglevel = config["logging"]["loglevel"]
             self._logfile = config["logging"]["logfile"]
         else:
             self._loglevel = "warn"
             self._logfile = "./hbos.log"
+
+        self._config = config
 
         self._loggingdebug = logging.INFO
         if(hasattr(logging, self._loglevel.upper())):
@@ -82,3 +86,43 @@ class HBOSConfig(object):
     @is_new.setter
     def is_new(self, value: bool):
         self._new_install = value
+
+    @property
+    def title(self):
+        if "title" in self._config:
+            return self._config["title"]
+        else:
+            return "HBOS Server"
+    @property
+    def version(self):
+        if "version" in self._config:
+            return self._config["version"]
+        else:
+            return "0"
+
+    @property
+    def terms_of_service(self):
+        if "termsOfService" in self._config:
+            return self._config["termsOfService"]
+        else:
+            return ""
+
+    @property
+    def static_url_path(self):
+        if "staticUrlPath" in self._config:
+            return self._config["staticUrlPath"]
+        else:
+            return ""
+    @property
+    def description(self):
+        if "description" in self._config:
+            return self._config["description"]
+        else:
+            return ""
+
+    @property
+    def schemas(self) -> Dict[str, Dict]:
+        if "schemas" in self._config:
+            return self._config["schemas"]
+        else:
+            return {}

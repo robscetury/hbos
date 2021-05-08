@@ -13,12 +13,19 @@
   },
   "querysets": [{
     "name": "/files/",
+    "endPoints": {
+      "get": "./yaml/files_get.yaml"
+    },
+    "schemas": {
+
+    },
     "sources": [
       {
         "name": "foo",
         "class": "hbos_source.filesystemstorage.FileSystemStorage",
         "path": "./foo",
         "item_key": "name"
+
       },
       {
         "name": "bar",
@@ -46,6 +53,41 @@
           "item_key": "name"
         }
 
+      ],
+      "methods": ["GET","PUT","POST","DELETE"]
+    },
+    {
+      "name": "/merged_files/",
+      "schemas": {
+
+      },
+      "sources": [
+        {
+          "name": "foo",
+          "class": "hbos_source.filesystemstorage.FileSystemStorage",
+          "path": "./foo",
+          "item_key": "name"
+
+        },
+        {
+          "name": "bar",
+          "class": "hbos_source.filesystemstorage.FileSystemStorage",
+          "path": "./bar",
+          "item_key": "name"
+        }
+
+      ],
+      "outputs": [
+        {
+          "class": "hbos_output.merge.MergeOutput",
+          "name": "MergeBarAndFoo",
+          "mergeKeys": {
+            "foo": [{
+              "mergeSource": "bar",
+              "mergeDest": "children"
+            }]
+          }
+        }
       ],
       "methods": ["GET","PUT","POST","DELETE"]
     }

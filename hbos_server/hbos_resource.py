@@ -1,4 +1,7 @@
-from flask import request
+from os.path import abspath, normpath
+from types import MethodType
+
+from flask import request, Flask
 from flask_restful import Resource
 from pandas import DataFrame
 
@@ -6,8 +9,17 @@ from .queryset import QuerySet
 
 resource_count = 0
 
+def add_swagger(obj, method, docstring):
+    docstring = abspath( normpath (docstring))
+    method.__doc__ =  f"\nfile: {docstring}\n"
+    new_method = MethodType(method, obj)
+    #new_method.__doc__ = docstring
+    #
+    #new_method.__doc__ =
+    return new_method
 
-def create_resource(qs: QuerySet, *args, **kwargs):
+def create_resource(app:Flask, qs:QuerySet,
+                    *args, **kwargs):
     global resource_count
 
     def get_queryset(self):
@@ -19,9 +31,10 @@ def create_resource(qs: QuerySet, *args, **kwargs):
 
 
     def get(self, *args, **kwargs):
-        result = self.queryset.execute("get", request, *args, **kwargs)
-        clean_result(result)
-        return result
+            result = self.queryset.execute("get", request, *args, **kwargs)
+            clean_result(result)
+            return result
+
 
     def clean_result(result):
         if (isinstance(result, dict)):
@@ -44,7 +57,6 @@ def create_resource(qs: QuerySet, *args, **kwargs):
         result = self.queryset.execute("delete", request, *args, **kwargs)
         clean_result(result)
         return result
-
     new_class = type(f"__HBOSResource{resource_count}",
                      (Resource,),
                      {
@@ -57,6 +69,16 @@ def create_resource(qs: QuerySet, *args, **kwargs):
 
                      }
                      )
+    if "get" in qs.end_points:
+        get = add_swagger(new_class, get, qs.end_points["get"])
+    if "put" in qs.end_points:
+        put = add_swagger(new_class, put, qs.end_points["put"])
+    if "post" in qs.end_points:
+        post = add_swagger(new_class, put, qs.end_points["put"])
+    if "delete" in qs.end_points:
+        delete = add_swagger(new_class, delete, qs.end_points["delete"])
+
+
     resource_count += 1
     return new_class
 

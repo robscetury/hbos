@@ -74,3 +74,12 @@ class SourceBase(object):
     def __init__(self, source_name, source_options):
         self._name = source_name
         self._options = source_options
+        if "swaggerFiles" in source_options:
+            self._swagger_files = source_options["swaggerFiles"]
+        else:
+            self._swagger_files = {}
+
+
+    @property
+    def swagger_files(self):
+        return self._swagger_files
