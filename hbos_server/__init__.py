@@ -26,10 +26,11 @@ swagger_config = {
     "description":""
 }
 
-class HBOServer(object):
+class HBOServer(Api):
 
-    def __init__(self, app:Flask, api:Api,  config_file):
+    def __init__(self, app:Flask, config_file):
         #Flask.__init__(name)
+        Api.__init__(self)
 
         if isinstance(config_file, HBOSConfig):
             self._config = config_file
@@ -40,7 +41,7 @@ class HBOServer(object):
         self.configure_swagger(self._config)
         for name in self._query_config:
            self._resources[name]=create_resource(app=app, qs=self._query_config[name])
-           api.add_resource(self._resources[name], name)
+           self.add_resource(self._resources[name], name)
 
     @property
     def query_config(self) -> Dict[str, QuerySet ]:
@@ -83,9 +84,7 @@ class HBOServer(object):
     def description(self):
         return self._config.description
 
-class HBOSApi(Api):
-
-      def handle_error(self, e:BaseHBOSException):
+    def handle_error(self, e:BaseHBOSException):
          """Return JSON instead of HTML for HTTP errors."""
          # start with the correct headers and status code from the error
          if(hasattr(e, "get_response")):
@@ -120,10 +119,10 @@ def start_hbos_server(args):
         config = HBOSConfig(config_file)
     app = Flask("HBOServer")
 
-    api = HBOSApi(app)
+    api = HBOServer(app, config)
 
-    hbos = HBOServer(app, api, config)
+    #hbos = HBOServer(app, api, config)
     #hbos.configure_swagger(config, swagger_config)
     swag = Swagger(app, config=swagger_config, merge=True)
-    #api.init_app(app)
+    api.init_app(app)
     app.run(port=config.port, host=config.interface, ssl_context = config.ssl_context if config.use_ssl else None)
