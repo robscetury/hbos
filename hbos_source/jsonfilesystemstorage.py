@@ -55,7 +55,7 @@ def read_file(path:str):
 
 
 
-class FileSystemStorage(SourceBase):
+class JsonFileSystemStorage(SourceBase):
 
     def create(self, objs_to_create: List[Dict[str, typing.Any]],*args, **kwargs) -> DataFrame:
         all_created = True

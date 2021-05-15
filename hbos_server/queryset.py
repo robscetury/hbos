@@ -152,7 +152,7 @@ class QuerySet(object):
     def process_results(self, dataset, results):
         modified = None
         for output in self.outputs:
-            name, modified = output.output(self.name, dataset)
+                name, modified = output.output(self.name, dataset)
         return modified
 
 
@@ -170,8 +170,9 @@ class QuerySet(object):
         results = dict()
         for k in self.sources:
             original_values = k.retrieve(*args, **kwargs)
-            data = k.update(body[k.name],original_values, *args, **kwargs)
-            dataset[k.name]=data
+            if k.name in body:
+                data = k.update(body[k.name],original_values, *args, **kwargs)
+                dataset[k.name]=data
         results = self.process_results(dataset, results)
         return results
 
@@ -180,8 +181,9 @@ class QuerySet(object):
         dataset = dict()
         results = dict()
         for k in self.sources:
-            data = k.create(body[k.name], *args, **kwargs)
-            dataset[k.name]=data
+            if k.name in body:
+                data = k.create(body[k.name], *args, **kwargs)
+                dataset[k.name]=data
         results = self.process_results(dataset, results)
         return results
 

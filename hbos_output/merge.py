@@ -6,7 +6,7 @@ from hbos_server.outputbase import OutputBase
 
 class MergeOutput(OutputBase):
 
-    def output(self, name: str, input_data: DataFrame) -> typing.Tuple[str, object]:
+    def output(self, name: str, input_data: Dict[str,DataFrame]) -> typing.Tuple[str, object]:
         """
         For simple parent child relations where we are getting the parent "mergeToKeys"
         and the children in mergeFromKeys will be merged to a new property value

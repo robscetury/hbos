@@ -22,16 +22,22 @@
     "sources": [
       {
         "name": "foo",
-        "class": "hbos_source.filesystemstorage.FileSystemStorage",
+        "class": "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
         "path": "./foo",
         "item_key": "name"
 
       },
       {
         "name": "bar",
-        "class": "hbos_source.filesystemstorage.FileSystemStorage",
+        "class": "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
         "path": "./bar",
         "item_key": "name"
+      },
+      {
+        "name": "filteredFiles",
+        "class":  "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
+        "path": "./filtered",
+        "item_key": "id"
       }
 
     ],
@@ -42,13 +48,13 @@
       "sources": [
         {
           "name": "foo",
-          "class": "hbos_source.filesystemstorage.FileSystemStorage",
+          "class": "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
           "path": "./foo",
           "item_key": "name"
         },
         {
           "name": "bar",
-          "class": "hbos_source.filesystemstorage.FileSystemStorage",
+          "class": "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
           "path": "./bar",
           "item_key": "name"
         }
@@ -64,14 +70,14 @@
       "sources": [
         {
           "name": "foo",
-          "class": "hbos_source.filesystemstorage.FileSystemStorage",
+          "class": "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
           "path": "./foo",
           "item_key": "name"
 
         },
         {
           "name": "bar",
-          "class": "hbos_source.filesystemstorage.FileSystemStorage",
+          "class": "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
           "path": "./bar",
           "item_key": "name"
         }
@@ -86,6 +92,91 @@
               "mergeSource": "bar",
               "mergeDest": "children"
             }]
+          }
+        }
+      ],
+      "methods": ["GET","PUT","POST","DELETE"]
+    },
+    {
+      "name": "/collated_files/",
+      "schemas": {
+
+      },
+      "sources": [
+        {
+          "name": "foo",
+          "class": "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
+          "path": "./foo",
+          "item_key": "name"
+
+        },
+        {
+          "name": "bar",
+          "class": "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
+          "path": "./bar",
+          "item_key": "name"
+        },
+        {
+          "name": "filteredFiles",
+          "class":  "hbos_source.jsonfilesystemstorage.JsonFileSystemStorage",
+          "path": "./filtered",
+          "item_key": "id"
+        }
+
+      ],
+      "outputs": [
+        {
+          "class": "hbos_output.collate.CollateOutput",
+          "name": "CollateAttributes",
+          "mergeKeys": {
+            "foo": [{
+              "mergeSource": "filteredFiles",
+              "mergeDest": "attributes",
+              "mergeValue": "name",
+              "mergeDestValue": "name"
+            }],
+
+                "bar": [
+                  {
+                    "mergeSource": "filteredFiles",
+                    "mergeDest": "attributes",
+                    "mergeValue": "name",
+                    "mergeDestValue": "name"
+                  }
+                ]
+              }
+          },
+        {
+          "class": "hbos_output.delete_source.DeleteSourceOutput",
+          "name": "DelFiltered",
+          "deleteKeys": ["filteredFiles"]
+        },
+        {
+          "class": "hbos_output.lazy_load_links.LazyLoadLinksOutput",
+          "name": "forgienKey1",
+          "querysets": {
+            "foo": {
+              "fields": [
+                {"name": "test",
+                 "relName": "testId",
+                  "link": "/tests/{fieldvalue}/?relName=testId"
+                }
+              ]
+            }
+          }
+
+        },
+        {
+          "class": "hbos_output.column_map.ColumnMapOutput",
+          "name": "columnmapper",
+          "querysets": {
+            "bar": {
+              "fields": {
+                "what": "specification",
+                "flute": "valid",
+                "attributes": "profile"
+              }
+            }
           }
         }
       ],
