@@ -1,4 +1,4 @@
-from typing import Dict, Union, Tuple
+from typing import Dict, Union, Tuple, Any
 
 from .queryset import QuerySet
 from json import load
@@ -49,6 +49,9 @@ class HBOSConfig(object):
             self._loglevel = "warn"
             self._logfile = "./hbos.log"
 
+        if "connections" in config:
+            self._connections = config["connections"]
+
         self._config = config
 
         self._loggingdebug = logging.INFO
@@ -56,6 +59,11 @@ class HBOSConfig(object):
             self._loggingdebug = getattr(logging, self._loglevel.upper())
 
         logging.basicConfig(filename = self._logfile, level=self._loggingdebug )
+
+    @property
+    def connections(self) -> Dict[str, Any]:
+        return self._connections
+
     @property
     def use_ssl(self) -> bool:
         return self._use_ssl

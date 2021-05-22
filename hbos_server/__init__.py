@@ -10,7 +10,7 @@ from .configuration import HBOSConfig
 from .exceptions import BaseHBOSException, ObjectAlreadyExists
 from .hbos_resource import HBOSResource, create_resource
 from .queryset import QuerySet
-
+from .connection_manager import get_manager
 swagger_config = {
     "headers": [],
     "openapi":"3.0.2",
@@ -39,6 +39,8 @@ class HBOServer(Api):
         self._query_config: Dict[str, QuerySet] = self._config.querysets if not self._config.is_new else dict()
         self._resources = dict()
         self.configure_swagger(self._config)
+        manager = get_manager()
+        manager.initialize(self._config.connections)
         for name in self._query_config:
            self._resources[name]=create_resource(app=app, qs=self._query_config[name])
            self.add_resource(self._resources[name], name)
@@ -124,5 +126,6 @@ def start_hbos_server(args):
     #hbos = HBOServer(app, api, config)
     #hbos.configure_swagger(config, swagger_config)
     swag = Swagger(app, config=swagger_config, merge=True)
+    # noinspection PyTypeChecker
     api.init_app(app)
     app.run(port=config.port, host=config.interface, ssl_context = config.ssl_context if config.use_ssl else None)

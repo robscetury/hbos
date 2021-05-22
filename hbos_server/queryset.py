@@ -1,7 +1,6 @@
 import logging
 import traceback
 import typing
-from importlib import import_module
 from typing import List
 
 from flask import request
@@ -10,24 +9,9 @@ from hbos_server.defaultoutput import DefaultOutput
 from .exceptions import InvalidObject
 from .outputbase import OutputBase
 from .sourcebase import SourceBase
+from .utility import instantiate_worker_object
 from .validationbase import ValidationBase, Validation
 from .workbase import WorkBase
-
-
-def get_library_and_class_names(importstatement):
-    name = importstatement.split('.')
-    return '.'.join(name[:-1]), name[-1]
-
-
-def get_class(name):
-    module_name, classname = get_library_and_class_names(name)
-    m = import_module(module_name)
-    return getattr(m, classname)
-
-
-def instantiate_worker_object(options):
-    classObject = get_class(options["class"])
-    return classObject(options["name"], options)
 
 
 class QuerySet(object):

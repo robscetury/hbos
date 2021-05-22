@@ -62,10 +62,10 @@ def create_resource(app:Flask, qs:QuerySet,
                      {
                          "_queryset": qs,
                          "queryset": property(get_queryset, set_queryset),
-                         "get": get,
-                         "put": put,
-                         "delete": delete,
-                         "post": post
+                         "get": get if "GET" in qs.methods else None,
+                         "put": put if "PUT" in qs.methods else None,
+                         "delete": delete if "DELETE" in qs.methods else None,
+                         "post": post if "POST" in qs.methods else None
 
                      }
                      )
