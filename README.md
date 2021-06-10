@@ -365,6 +365,8 @@ system, adding additional sources, outputs and work based on users needs shouldn
 
 ### Other features
 1) Transactions-- undo all actions and retun an error if one stage of an update, delete or create fails. (Inital code written, testing ongoing)
-
+1) Security -- encryption/signing for configuration file to ensure it's only change by authorized parties
+1) Security -- support for plugable architecture schemes (JWT to start most likely)
+1) Security -- support for retreiving connection strings and passwords from secured locations (like secret server) 
 
 
